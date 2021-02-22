@@ -578,7 +578,8 @@ services:
         max-file: '5'
 
   iotagent-mqtt:
-    image: dojot/vernemq-dojot:development
+    image: jonaphael/vernemq-redis
+    # image: dojot/vernemq-dojot:development
     command: ["/bin/bash", "-c", "echo $$VERNEMQ_CONF | base64 -d > /etc/vernemq/vernemq.conf; echo $$VM_ARGS | base64 -d > /etc/vernemq/vm.args; start_vernemq"]
     depends_on:
       - iotagent-mqtt-cert-sidecar
@@ -607,6 +608,7 @@ services:
     depends_on:
       - x509-identity-mgmt
     environment:
+      CERT_SC_CRON_CABUNDLE: "true"
       CERT_SC_APP_SIDECAR_TO: 'iotagent-mqtt'
       CERT_SC_LOG_CONSOLE_LEVEL: 'info'
       # About CERT_SC_CERTS_HOSTNAMES
@@ -624,6 +626,27 @@ services:
     volumes:
       - iotagent-mqtt-cert-side-volume:/vernemq/cert
     restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: '5'
+
+  vernemq-redis:
+    image: dojot/redis:6.0.4-alpine3.11
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: '5'
+
+  certificate-acl:
+    image: jonaphael/certificate_acl
+    restart: always
+    depends_on:
+      - kafka
+      - vernemq-redis
     logging:
       driver: json-file
       options:
